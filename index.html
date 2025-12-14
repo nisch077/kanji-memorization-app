@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanji Millionaire</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🎌 Kanji Millionaire 🎌</h1>
+        
+        <!-- Category Selection Screen -->
+        <div id="category-screen">
+            <h2 class="category-title">Choose Your Category</h2>
+            <div class="category-grid" id="category-grid"></div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" style="display: none;">
+            <div class="score">Question <span id="current">1</span> of <span id="total">10</span> | Score: <span id="score">0</span></div>
+            
+            <div id="game-area">
+                <div class="question-container">
+                    <div class="question-text">What does this kanji mean?</div>
+                    <div class="kanji" id="kanji-display"></div>
+                </div>
+                
+                <div class="options" id="options-container"></div>
+                
+                <button class="btn" id="next-btn" style="display: none;">Next Question</button>
+            </div>
+
+            <div id="result-area" style="display: none;">
+                <div class="result">🎉 Quiz Complete! 🎉</div>
+                <div class="final-score">Final Score: <span id="final-score"></span>/<span id="final-total"></span></div>
+                <button class="btn" onclick="location.reload()">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="kanji-data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

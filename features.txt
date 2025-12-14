@@ -1,0 +1,57 @@
+🎯 Most Impactful Features:
+1. Progress Tracking & Statistics ⭐ (Highly Recommended) | completed
+
+Track overall performance (total correct/incorrect)
+Show streak counter (consecutive correct answers)
+Display accuracy percentage at the end
+Track which kanji the user struggles with most
+
+2. Difficulty Levels / Quiz Modes
+
+Easy: 5 questions
+Medium: 10 questions (current)
+Hard: 20 questions
+Custom: User chooses number of questions
+
+3. Lifelines (Like "Who Wants to Be a Millionaire")
+
+50/50: Remove 2 wrong answers
+Skip: Skip to next question (limited uses)
+Hint: Show the reading (hiragana) of the kanji
+
+4. Timer Challenge Mode
+
+Add countdown timer per question (e.g., 10 seconds)
+Bonus points for faster answers
+Leaderboard for fastest completions
+
+5. Review Incorrect Answers
+
+At the end, show all the questions they got wrong
+Allow them to retry just the missed kanji
+
+6. Sound Effects & Visual Polish
+
+Correct answer sound
+Wrong answer sound
+Background music (optional, with mute button)
+Confetti animation for perfect score
+
+7. Category Selection
+
+Numbers only
+Family members only
+Verbs only
+Directions only
+Mix of all (current)
+
+8. Reverse Mode
+
+Show the English meaning, user picks the kanji
+Makes it more challenging!
+
+🌟 My Top 3 Recommendations to Start:
+
+Progress Tracking - Adds immediate value and motivation
+Lifelines - Makes it fun and strategic like the game show
+Review Wrong Answers - Best for learning
