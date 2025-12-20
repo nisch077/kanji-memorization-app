@@ -37,7 +37,7 @@ Wrong answer sound
 Background music (optional, with mute button)
 Confetti animation for perfect score
 
-7. Category Selection
+7. Category Selection | completed
 
 Numbers only
 Family members only

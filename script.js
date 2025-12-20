@@ -9,6 +9,13 @@ let bestStreak = 0;
 let wrongKanji = [];
 let selectedCategory = 'all';
 
+// Lifeline states
+let lifelines = {
+    fiftyFifty: { available: true, used: false },
+    skip: { available: true, used: false },
+    hint: { available: true, used: false }
+};
+
 // Initialize category selection screen
 function initCategoryScreen() {
     const categoryGrid = document.getElementById('category-grid');
@@ -64,6 +71,14 @@ function initGame() {
     currentStreak = 0;
     bestStreak = 0;
     wrongKanji = [];
+    
+    // Reset lifelines
+    lifelines = {
+        fiftyFifty: { available: true, used: false },
+        skip: { available: true, used: false },
+        hint: { available: true, used: false }
+    };
+    
     displayQuestion();
 }
 
@@ -93,6 +108,13 @@ function displayQuestion() {
     });
 
     document.getElementById('next-btn').style.display = 'none';
+    
+    // Update lifeline buttons
+    updateLifelineButtons();
+    
+    // Clear any hint message
+    const existingHint = document.querySelector('.hint-message');
+    if (existingHint) existingHint.remove();
 }
 
 function checkAnswer(selected, correct, button) {
@@ -206,6 +228,84 @@ document.getElementById('next-btn').onclick = () => {
     currentQuestion++;
     displayQuestion();
 };
+
+// ============= LIFELINE FUNCTIONS =============
+
+function updateLifelineButtons() {
+    const fiftyBtn = document.getElementById('fifty-fifty-btn');
+    const skipBtn = document.getElementById('skip-btn');
+    const hintBtn = document.getElementById('hint-btn');
+    
+    if (fiftyBtn) {
+        fiftyBtn.className = lifelines.fiftyFifty.used ? 'lifeline-btn used' : 'lifeline-btn';
+        fiftyBtn.disabled = lifelines.fiftyFifty.used;
+    }
+    if (skipBtn) {
+        skipBtn.className = lifelines.skip.used ? 'lifeline-btn used' : 'lifeline-btn';
+        skipBtn.disabled = lifelines.skip.used;
+    }
+    if (hintBtn) {
+        hintBtn.className = lifelines.hint.used ? 'lifeline-btn used' : 'lifeline-btn';
+        hintBtn.disabled = lifelines.hint.used;
+    }
+}
+
+function useFiftyFifty() {
+    if (lifelines.fiftyFifty.used) return;
+    
+    const question = shuffledQuestions[currentQuestion];
+    const options = document.querySelectorAll('.option');
+    const correctAnswer = question.correct;
+    
+    // Find wrong answers that are still visible
+    const wrongOptions = Array.from(options).filter(opt => 
+        opt.textContent !== correctAnswer && 
+        !opt.classList.contains('disabled')
+    );
+    
+    // Remove 2 random wrong answers
+    const toRemove = shuffleArray(wrongOptions).slice(0, 2);
+    toRemove.forEach(opt => {
+        opt.style.opacity = '0.3';
+        opt.style.pointerEvents = 'none';
+        opt.classList.add('disabled');
+    });
+    
+    lifelines.fiftyFifty.used = true;
+    updateLifelineButtons();
+}
+
+function useSkip() {
+    if (lifelines.skip.used) return;
+    
+    lifelines.skip.used = true;
+    updateLifelineButtons();
+    
+    // Move to next question without marking as wrong
+    currentQuestion++;
+    displayQuestion();
+}
+
+function useHint() {
+    if (lifelines.hint.used) return;
+    
+    const question = shuffledQuestions[currentQuestion];
+    
+    // Remove existing hint if any
+    const existingHint = document.querySelector('.hint-message');
+    if (existingHint) existingHint.remove();
+    
+    // Create hint message
+    const hintDiv = document.createElement('div');
+    hintDiv.className = 'hint-message';
+    hintDiv.innerHTML = `💡 <strong>Hint:</strong> The correct answer is "${question.correct}"`;
+    
+    const questionContainer = document.querySelector('.question-container');
+    questionContainer.appendChild(hintDiv);
+    
+    lifelines.hint.used = true;
+    updateLifelineButtons();
+}
 
 // Initialize the game when page loads
 initCategoryScreen();
