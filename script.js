@@ -8,6 +8,8 @@ let currentStreak = 0;
 let bestStreak = 0;
 let wrongKanji = [];
 let selectedCategory = 'all';
+let selectedQuizMode = 'medium';
+let customQuestionCount = 10;
 
 // Lifeline states
 let lifelines = {
@@ -16,12 +18,12 @@ let lifelines = {
     hint: { available: true, used: false }
 };
 
-// Initialize category selection screen
+// ============= CATEGORY SELECTION =============
+
 function initCategoryScreen() {
     const categoryGrid = document.getElementById('category-grid');
     categoryGrid.innerHTML = '';
     
-    // Create category cards
     for (const [key, cat] of Object.entries(categories)) {
         const count = key === 'all' ? kanjiData.length : kanjiData.filter(k => k.category === key).length;
         
@@ -40,13 +42,102 @@ function initCategoryScreen() {
     }
 }
 
-// Select category and start game
 function selectCategory(category) {
     selectedCategory = category;
     document.getElementById('category-screen').style.display = 'none';
+    showQuizModeScreen();
+}
+
+// ============= QUIZ MODE SELECTION =============
+
+function showQuizModeScreen() {
+    let modeScreen = document.getElementById('quiz-mode-screen');
+    if (!modeScreen) {
+        modeScreen = document.createElement('div');
+        modeScreen.id = 'quiz-mode-screen';
+        document.querySelector('.container').appendChild(modeScreen);
+    }
+    
+    const filteredKanji = selectedCategory === 'all' 
+        ? kanjiData 
+        : kanjiData.filter(k => k.category === selectedCategory);
+    const availableCount = filteredKanji.length;
+    
+    const modes = [
+        { id: 'easy', name: 'Easy', emoji: '😊', questions: 5, description: '5 questions' },
+        { id: 'medium', name: 'Medium', emoji: '🤔', questions: 10, description: '10 questions' },
+        { id: 'hard', name: 'Hard', emoji: '😰', questions: 20, description: '20 questions' },
+        { id: 'custom', name: 'Custom', emoji: '⚙️', questions: 0, description: 'Choose amount' }
+    ];
+    
+    let modeCards = '';
+    modes.forEach(mode => {
+        const isAvailable = mode.id === 'custom' || mode.questions <= availableCount;
+        if (isAvailable) {
+            modeCards += `
+                <div class="mode-card" onclick="selectQuizMode('${mode.id}', ${availableCount})">
+                    <div class="mode-emoji">${mode.emoji}</div>
+                    <div class="mode-name">${mode.name}</div>
+                    <div class="mode-description">${mode.description}</div>
+                </div>
+            `;
+        }
+    });
+    
+    modeScreen.innerHTML = `
+        <h2 class="category-title">Select Difficulty</h2>
+        <div class="mode-grid">
+            ${modeCards}
+        </div>
+        <button class="btn back-btn" onclick="backToCategories()">← Back to Categories</button>
+    `;
+    
+    modeScreen.style.display = 'block';
+}
+
+function selectQuizMode(mode, availableCount) {
+    selectedQuizMode = mode;
+    
+    if (mode === 'custom') {
+        showCustomModeInput(availableCount);
+    } else {
+        document.getElementById('quiz-mode-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'block';
+        initGame();
+    }
+}
+
+function showCustomModeInput(availableCount) {
+    const modeScreen = document.getElementById('quiz-mode-screen');
+    modeScreen.innerHTML = `
+        <h2 class="category-title">Custom Mode</h2>
+        <div class="custom-mode-container">
+            <p>Available kanji: <strong>${availableCount}</strong></p>
+            <label for="question-count">How many questions?</label>
+            <input type="number" id="question-count" min="1" max="${availableCount}" value="${Math.min(10, availableCount)}">
+            <div class="custom-buttons">
+                <button class="btn" onclick="startCustomMode()">Start Quiz</button>
+                <button class="btn back-btn" onclick="showQuizModeScreen()">← Back</button>
+            </div>
+        </div>
+    `;
+}
+
+function startCustomMode() {
+    const input = document.getElementById('question-count');
+    customQuestionCount = parseInt(input.value);
+    
+    document.getElementById('quiz-mode-screen').style.display = 'none';
     document.getElementById('game-screen').style.display = 'block';
     initGame();
 }
+
+function backToCategories() {
+    document.getElementById('quiz-mode-screen').style.display = 'none';
+    document.getElementById('category-screen').style.display = 'block';
+}
+
+// ============= GAME LOGIC =============
 
 function shuffleArray(array) {
     const newArray = [...array];
@@ -58,12 +149,24 @@ function shuffleArray(array) {
 }
 
 function initGame() {
-    // Filter kanji by selected category
     const filteredKanji = selectedCategory === 'all' 
         ? kanjiData 
         : kanjiData.filter(k => k.category === selectedCategory);
     
-    shuffledQuestions = shuffleArray(filteredKanji).slice(0, 10);
+    let questionCount;
+    if (selectedQuizMode === 'easy') {
+        questionCount = 5;
+    } else if (selectedQuizMode === 'medium') {
+        questionCount = 10;
+    } else if (selectedQuizMode === 'hard') {
+        questionCount = 20;
+    } else if (selectedQuizMode === 'custom') {
+        questionCount = customQuestionCount;
+    }
+    
+    questionCount = Math.min(questionCount, filteredKanji.length);
+    
+    shuffledQuestions = shuffleArray(filteredKanji).slice(0, questionCount);
     currentQuestion = 0;
     score = 0;
     correctAnswers = 0;
@@ -72,7 +175,6 @@ function initGame() {
     bestStreak = 0;
     wrongKanji = [];
     
-    // Reset lifelines
     lifelines = {
         fiftyFifty: { available: true, used: false },
         skip: { available: true, used: false },
@@ -109,10 +211,8 @@ function displayQuestion() {
 
     document.getElementById('next-btn').style.display = 'none';
     
-    // Update lifeline buttons
     updateLifelineButtons();
     
-    // Clear any hint message
     const existingHint = document.querySelector('.hint-message');
     if (existingHint) existingHint.remove();
 }
@@ -141,7 +241,6 @@ function checkAnswer(selected, correct, button) {
         button.classList.add('wrong');
         incorrectAnswers++;
         currentStreak = 0;
-        // Track wrong kanji for review
         wrongKanji.push({
             kanji: question.kanji,
             correct: correct,
@@ -150,78 +249,6 @@ function checkAnswer(selected, correct, button) {
     }
 
     document.getElementById('next-btn').style.display = 'block';
-}
-
-function showResults() {
-    document.getElementById('game-area').style.display = 'none';
-    const resultArea = document.getElementById('result-area');
-    resultArea.style.display = 'block';
-    
-    const accuracy = Math.round((correctAnswers / shuffledQuestions.length) * 100);
-    
-    document.getElementById('final-score').textContent = score;
-    document.getElementById('final-total').textContent = shuffledQuestions.length;
-    
-    // Build detailed statistics
-    let statsHTML = `
-        <div class="stats-container">
-            <h3>📊 Your Statistics</h3>
-            <div class="stat-grid">
-                <div class="stat-item">
-                    <div class="stat-label">Correct Answers</div>
-                    <div class="stat-value correct-stat">${correctAnswers}</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Incorrect Answers</div>
-                    <div class="stat-value incorrect-stat">${incorrectAnswers}</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Accuracy</div>
-                    <div class="stat-value">${accuracy}%</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Best Streak</div>
-                    <div class="stat-value streak-stat">🔥 ${bestStreak}</div>
-                </div>
-            </div>
-    `;
-    
-    // Show wrong answers if any
-    if (wrongKanji.length > 0) {
-        statsHTML += `
-            <div class="wrong-answers-section">
-                <h4>📝 Review Your Mistakes</h4>
-                <div class="wrong-answers-list">
-        `;
-        
-        wrongKanji.forEach(item => {
-            statsHTML += `
-                <div class="wrong-answer-item">
-                    <span class="wrong-kanji">${item.kanji}</span>
-                    <span class="wrong-detail">You chose: <strong>${item.selected}</strong></span>
-                    <span class="correct-detail">Correct: <strong class="correct-answer">${item.correct}</strong></span>
-                </div>
-            `;
-        });
-        
-        statsHTML += `
-                </div>
-            </div>
-        `;
-    } else {
-        statsHTML += `
-            <div class="perfect-score">
-                <h3>🎉 PERFECT SCORE! 🎉</h3>
-                <p>You got every question right!</p>
-            </div>
-        `;
-    }
-    
-    statsHTML += '</div>';
-    
-    // Insert stats before the play again button
-    const playAgainBtn = resultArea.querySelector('.btn');
-    playAgainBtn.insertAdjacentHTML('beforebegin', statsHTML);
 }
 
 document.getElementById('next-btn').onclick = () => {
@@ -257,13 +284,11 @@ function useFiftyFifty() {
     const options = document.querySelectorAll('.option');
     const correctAnswer = question.correct;
     
-    // Find wrong answers that are still visible
     const wrongOptions = Array.from(options).filter(opt => 
         opt.textContent !== correctAnswer && 
         !opt.classList.contains('disabled')
     );
     
-    // Remove 2 random wrong answers
     const toRemove = shuffleArray(wrongOptions).slice(0, 2);
     toRemove.forEach(opt => {
         opt.style.opacity = '0.3';
@@ -281,7 +306,6 @@ function useSkip() {
     lifelines.skip.used = true;
     updateLifelineButtons();
     
-    // Move to next question without marking as wrong
     currentQuestion++;
     displayQuestion();
 }
@@ -291,11 +315,9 @@ function useHint() {
     
     const question = shuffledQuestions[currentQuestion];
     
-    // Remove existing hint if any
     const existingHint = document.querySelector('.hint-message');
     if (existingHint) existingHint.remove();
     
-    // Create hint message
     const hintDiv = document.createElement('div');
     hintDiv.className = 'hint-message';
     hintDiv.innerHTML = `💡 <strong>Hint:</strong> The correct answer is "${question.correct}"`;
@@ -307,5 +329,77 @@ function useHint() {
     updateLifelineButtons();
 }
 
-// Initialize the game when page loads
+// ============= RESULTS & STATISTICS =============
+
+function showResults() {
+    document.getElementById('game-area').style.display = 'none';
+    const resultArea = document.getElementById('result-area');
+    resultArea.style.display = 'block';
+    
+    const accuracy = Math.round((correctAnswers / shuffledQuestions.length) * 100);
+    
+    document.getElementById('final-score').textContent = score;
+    document.getElementById('final-total').textContent = shuffledQuestions.length;
+    
+    let statsHTML = `
+        <div class="stats-container">
+            <h3>📊 Your Statistics</h3>
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <div class="stat-label">Correct Answers</div>
+                    <div class="stat-value correct-stat">${correctAnswers}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Incorrect Answers</div>
+                    <div class="stat-value incorrect-stat">${incorrectAnswers}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Accuracy</div>
+                    <div class="stat-value">${accuracy}%</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Best Streak</div>
+                    <div class="stat-value streak-stat">🔥 ${bestStreak}</div>
+                </div>
+            </div>
+    `;
+    
+    if (wrongKanji.length > 0) {
+        statsHTML += `
+            <div class="wrong-answers-section">
+                <h4>📝 Review Your Mistakes</h4>
+                <div class="wrong-answers-list">
+        `;
+        
+        wrongKanji.forEach(item => {
+            statsHTML += `
+                <div class="wrong-answer-item">
+                    <span class="wrong-kanji">${item.kanji}</span>
+                    <span class="wrong-detail">You chose: <strong>${item.selected}</strong></span>
+                    <span class="correct-detail">Correct: <strong class="correct-answer">${item.correct}</strong></span>
+                </div>
+            `;
+        });
+        
+        statsHTML += `
+                </div>
+            </div>
+        `;
+    } else {
+        statsHTML += `
+            <div class="perfect-score">
+                <h3>🎉 PERFECT SCORE! 🎉</h3>
+                <p>You got every question right!</p>
+            </div>
+        `;
+    }
+    
+    statsHTML += '</div>';
+    
+    const playAgainBtn = resultArea.querySelector('.btn');
+    playAgainBtn.insertAdjacentHTML('beforebegin', statsHTML);
+}
+
+// ============= INITIALIZE =============
+
 initCategoryScreen();
